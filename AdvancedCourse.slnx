@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="AdvancedCourse.Threads/AdvancedCourse.Threads.csproj" />
+  <Project Path="AdvancedCourse/AdvancedCourse.csproj" />
+</Solution>
