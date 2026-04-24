@@ -1,4 +1,5 @@
-﻿using AdvancedCourse.Threads;
+﻿using AdvancedCourse.Tasks;
+using AdvancedCourse.Threads;
 
 //-------------- ThreadCoordinator ---------------
 Console.WriteLine("-------------- ThreadCoordinator ---------------");
@@ -16,3 +17,19 @@ Console.WriteLine("-------------- ThreadPool ---------------");
 CustomThreadPool.QueueUserWorkItem(
     (obj) => Console.WriteLine(obj),
     5);
+
+
+//-------------- Task ---------------
+Console.WriteLine("-------------- Task ---------------");
+
+var taskLoop = new TaskLoop
+{
+    A = () => Console.WriteLine($"After delay {Thread.CurrentThread.ManagedThreadId}"),
+    Max = 5,
+};
+
+Console.WriteLine("Hello world {Thread.CurrentThread.ManagedThreadId}");
+taskLoop.Run();
+taskLoop.Task.Wait();
+
+Console.WriteLine("The End.");

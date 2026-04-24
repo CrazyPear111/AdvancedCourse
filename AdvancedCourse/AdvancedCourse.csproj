@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AdvancedCourse.Tasks\AdvancedCourse.Tasks.csproj" />
     <ProjectReference Include="..\AdvancedCourse.Threads\AdvancedCourse.Threads.csproj" />
   </ItemGroup>
 

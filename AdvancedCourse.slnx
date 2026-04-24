@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="AdvancedCourse.Tasks/AdvancedCourse.Tasks.csproj" Id="e402804b-66bf-406a-9b62-e633fde508fc" />
   <Project Path="AdvancedCourse.Threads/AdvancedCourse.Threads.csproj" />
   <Project Path="AdvancedCourse/AdvancedCourse.csproj" />
 </Solution>
