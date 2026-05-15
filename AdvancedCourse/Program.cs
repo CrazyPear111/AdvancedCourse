@@ -36,5 +36,19 @@ taskLoop.Task.Wait();
 Console.WriteLine("The End.");
 
 //Custom delay
-await CustomTask.Delay(3000);
+await CustomTask.Delay(1000);
 Console.WriteLine("After custom delay.");
+
+//-------------- Synchronization context ---------------
+Console.WriteLine("-------------- Synchronization context ---------------");
+
+using var context = new CustomSynchronizationContext();
+SynchronizationContext.SetSynchronizationContext(context);
+
+Console.WriteLine($"Before delay: {Thread.CurrentThread.ManagedThreadId} {Thread.CurrentThread.Name}");
+await Task.Delay(1000);
+Console.WriteLine($"After delay: {Thread.CurrentThread.ManagedThreadId} {Thread.CurrentThread.Name}");
+await Task.Delay(1000);
+Console.WriteLine($"After second delay: {Thread.CurrentThread.ManagedThreadId} {Thread.CurrentThread.Name}");
+
+SynchronizationContext.SetSynchronizationContext(default);
