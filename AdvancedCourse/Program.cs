@@ -1,6 +1,7 @@
-﻿using AdvancedCourse.Tasks;
+﻿using AdvancedCourse.AsyncAwait;
+using AdvancedCourse.Tasks;
 using AdvancedCourse.Threads;
-using AdvancedCourse.AsyncAwait;
+using System.Diagnostics;
 
 //-------------- ThreadCoordinator ---------------
 Console.WriteLine("-------------- ThreadCoordinator ---------------");
@@ -54,7 +55,7 @@ Console.WriteLine($"After second delay: {Thread.CurrentThread.ManagedThreadId} {
 
 SynchronizationContext.SetSynchronizationContext(default);
 
-//-------------- WithCancellation helper ---------------
+//-------------- 15. WithCancellation helper ---------------
 Console.WriteLine("-------------- WithCancellation helper ---------------");
 
 var cts = new CancellationTokenSource(800);
@@ -76,7 +77,7 @@ catch (OperationCanceledException)
     Console.WriteLine(nameof(OperationCanceledException));
 }
 
-//-------------- Error helper ---------------
+//-------------- 16. Error helper ---------------
 Console.WriteLine("-------------- Error helper ---------------");
 
 var t1 = Task.Run(async () =>
@@ -107,13 +108,13 @@ catch (Exception ex)
 }
 
 
-//-------------- Cache service ---------------
+//-------------- 18. Cache service ---------------
 Console.WriteLine("-------------- Cache service ---------------");
 
 //await CacheService.Run();
 
 
-//-------------- Synchronization context tests ---------------
+//-------------- 19. Synchronization context tests ---------------
 Console.WriteLine("-------------- Synchronization context tests ---------------");
 
 SynchronizationContext.SetSynchronizationContext(new CustomSynchronizationContext());
@@ -141,3 +142,97 @@ Thread.Sleep(2000);
 await sct3; // task уже завершена, синхронное выполнение
 Console.WriteLine($"Context - {SynchronizationContext.Current is not null}"); // true, context НЕ переключился
 Console.WriteLine($"After await:{Environment.CurrentManagedThreadId}"); // тот же поток
+
+
+//-------------- 20. WhenAny / WhenAll continuations ---------------
+Console.WriteLine("-------------- WhenAny / WhenAll continuations ---------------");
+
+var tcs1 = new TaskCompletionSource();
+var twa1 = new Thread(() =>
+{
+    Console.WriteLine($"T1 - {Environment.CurrentManagedThreadId}");
+    Thread.Sleep(1000);
+    tcs1.SetResult();   // inline
+    Console.WriteLine($"Finish T1 - {Environment.CurrentManagedThreadId}");
+});
+
+var tcs2 = new TaskCompletionSource();
+var twa2 = new Thread(() =>
+{
+    Console.WriteLine($"T2 - {Environment.CurrentManagedThreadId}");
+    Thread.Sleep(2000);
+    tcs2.SetResult();   // inline
+    Console.WriteLine($"Finish T2 - {Environment.CurrentManagedThreadId}");
+});
+
+twa1.Start();
+twa2.Start();
+
+await Task.WhenAny(tcs1.Task, tcs2.Task); // продолжится на потоке T1, т.к. внутри WhenAny вызовется continuation для первой завершившейся задачи
+//await Task.WhenAll(tcs1.Task, tcs2.Task); // продолжится на потоке T2, т.к. внутри WhenAll вызовется continuation для последней завершившейся задачи
+
+Console.WriteLine($"After await  - {Environment.CurrentManagedThreadId}");
+
+
+//-------------- 21. What will be the result of the program's execution? ---------------
+
+var l = new List<Task>(); // List - не потокобезопасный
+_ = Task.Run(() =>
+{
+    while (true)
+    {
+        l.Add(Task.Delay(10_000)); // добавляет элементы в List
+    }
+});
+Thread.Sleep(1000);
+await Task.WhenAny(l); // перечисляет List, но он одновременно меняется, будет InvalidOperationException
+// или память закончится
+
+
+//-------------- 22. What will be the result of the program's execution? ---------------
+async Task fail() => throw new Exception();
+async Task wait() => await Task.Delay(TimeSpan.FromSeconds(2));
+async Task waitAndFail()
+{
+    await Task.Delay(
+        TimeSpan.FromSeconds(1));
+    throw new Exception();
+}
+
+var stopwatch = Stopwatch.StartNew();
+try
+{
+    await Task.WhenAll(fail(), wait(), wait(), waitAndFail()); // подождет все task'и и только потом бросит исключение
+}
+catch { }
+
+stopwatch.Stop();
+var elapsedSeconds = TimeSpan.FromMilliseconds(stopwatch.ElapsedMilliseconds).TotalSeconds;
+Console.WriteLine(elapsedSeconds >= 0); // true
+Console.WriteLine(elapsedSeconds >= 1); // true
+Console.WriteLine(elapsedSeconds >= 2); // true
+
+
+//-------------- 23. What will be the result of the program's execution? ---------------
+var tcs = new TaskCompletionSource();
+using var token = new CancellationTokenSource();
+token.Token.Register(() =>
+{
+    tcs.SetResult(); // inline (бесконечный цикл)
+    Console.WriteLine("Token has been cancelled."); // никогда не выведется в консоль
+});
+
+var t = Task.Run(async () =>
+{
+    await tcs.Task;
+    while (true)
+    {
+        Thread.Sleep(1000); //some long work;
+        Console.WriteLine("Job done");
+    }
+});
+
+await Task.Delay(1000);
+token.Cancel();
+await t;
+// выведутся бесконечные Job done
