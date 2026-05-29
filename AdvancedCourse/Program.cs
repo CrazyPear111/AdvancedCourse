@@ -57,10 +57,10 @@ SynchronizationContext.SetSynchronizationContext(default);
 //-------------- WithCancellation helper ---------------
 Console.WriteLine("-------------- WithCancellation helper ---------------");
 
-var cts = new CancellationTokenSource(1000);
+var cts = new CancellationTokenSource(800);
 var task = Task.Run(async () =>
 {
-    await Task.Delay(10000);
+    await Task.Delay(1000);
     Console.WriteLine("Real task finished.");
     return 42;
 });
@@ -74,4 +74,34 @@ try
 catch (OperationCanceledException)
 {
     Console.WriteLine(nameof(OperationCanceledException));
+}
+
+//-------------- Error helper ---------------
+Console.WriteLine("-------------- Error helper ---------------");
+
+var t1 = Task.Run(async () =>
+{
+    await Task.Delay(3000);
+    return 1;
+});
+
+var t2 = Task.Run<int>(async () =>
+{
+    await Task.Delay(500);
+    throw new InvalidOperationException("Failed");
+});
+
+var t3 = Task.Run(async () =>
+{
+    await Task.Delay(5000);
+    return 3;
+});
+
+try
+{
+    var result = await ErrorHelper.WhenAllOrError(t1, t2, t3);
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"{ex.GetType().Name}: {ex.Message}");
 }
