@@ -111,3 +111,33 @@ catch (Exception ex)
 Console.WriteLine("-------------- Cache service ---------------");
 
 //await CacheService.Run();
+
+
+//-------------- Synchronization context tests ---------------
+Console.WriteLine("-------------- Synchronization context tests ---------------");
+
+SynchronizationContext.SetSynchronizationContext(new CustomSynchronizationContext());
+Console.WriteLine($"App start, Thread:{Environment.CurrentManagedThreadId}");
+var sct1 = Task.Delay(1000);
+await sct1;
+Console.WriteLine($"Context - {SynchronizationContext.Current is not null}"); // true (контекст переключился)
+Console.WriteLine($"After await:{Environment.CurrentManagedThreadId}"); // другой поток (поток контекста)
+
+Console.WriteLine("------------------------------------------");
+
+SynchronizationContext.SetSynchronizationContext(new CustomSynchronizationContext());
+Console.WriteLine($"App start, Thread:{Environment.CurrentManagedThreadId}");
+var sct2 = Task.Delay(1000).ConfigureAwait(false);
+await sct2;
+Console.WriteLine($"Context - {SynchronizationContext.Current is not null}"); // false, context НЕ переключился
+Console.WriteLine($"After await:{Environment.CurrentManagedThreadId}");// другой поток (поток пула)
+
+Console.WriteLine("------------------------------------------");
+
+SynchronizationContext.SetSynchronizationContext(new CustomSynchronizationContext());
+Console.WriteLine($"App start, Thread:{Environment.CurrentManagedThreadId}");
+var sct3 = Task.Delay(1000).ConfigureAwait(false);
+Thread.Sleep(2000);
+await sct3; // task уже завершена, синхронное выполнение
+Console.WriteLine($"Context - {SynchronizationContext.Current is not null}"); // true, context НЕ переключился
+Console.WriteLine($"After await:{Environment.CurrentManagedThreadId}"); // тот же поток
