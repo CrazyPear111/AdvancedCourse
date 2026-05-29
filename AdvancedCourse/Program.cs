@@ -105,3 +105,9 @@ catch (Exception ex)
 {
     Console.WriteLine($"{ex.GetType().Name}: {ex.Message}");
 }
+
+
+//-------------- Cache service ---------------
+Console.WriteLine("-------------- Cache service ---------------");
+
+//await CacheService.Run();
