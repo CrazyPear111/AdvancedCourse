@@ -1,5 +1,6 @@
 ﻿using AdvancedCourse.Tasks;
 using AdvancedCourse.Threads;
+using AdvancedCourse.AsyncAwait;
 
 //-------------- ThreadCoordinator ---------------
 Console.WriteLine("-------------- ThreadCoordinator ---------------");
@@ -52,3 +53,25 @@ await Task.Delay(1000);
 Console.WriteLine($"After second delay: {Thread.CurrentThread.ManagedThreadId} {Thread.CurrentThread.Name}");
 
 SynchronizationContext.SetSynchronizationContext(default);
+
+//-------------- WithCancellation helper ---------------
+Console.WriteLine("-------------- WithCancellation helper ---------------");
+
+var cts = new CancellationTokenSource(1000);
+var task = Task.Run(async () =>
+{
+    await Task.Delay(10000);
+    Console.WriteLine("Real task finished.");
+    return 42;
+});
+
+try
+{
+    await task.WithCancellation(cts.Token);
+    // new way
+    //await task.WaitAsync(cts.Token);
+}
+catch (OperationCanceledException)
+{
+    Console.WriteLine(nameof(OperationCanceledException));
+}
